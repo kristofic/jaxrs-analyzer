@@ -75,6 +75,12 @@ public class ResultInterpreterTest {
         final ResourceMethod resourcePostMethod = ResourceMethodBuilder.withMethod(HttpMethod.POST)
                 .andResponse(204, ResponseBuilder.newBuilder().build()).build();
         expectedResult.addMethod("test/sub", resourcePostMethod);
+        final ResourceMethod subResourceGetMethodWithParams = ResourceMethodBuilder.withMethod(HttpMethod.GET)
+	            .andPathParam("id1", "J")
+	            .andPathParam("id2", "J")
+		        .andResponse(200, ResponseBuilder.newBuilder().build())
+	            .build();
+	    expectedResult.addMethod("test/sub/{id1}/subSub/{id2}", subResourceGetMethodWithParams);
 
         final ClassResult appPathResult = ClassResultBuilder.withApplicationPath("/path").build();
         final MethodResult method = MethodResultBuilder.withResponses(HttpResponseBuilder.withStatues(200).andEntityTypes(Types.STRING).build())
@@ -82,9 +88,12 @@ public class ResultInterpreterTest {
         final MethodResult subResourceLocator = MethodResultBuilder.newBuilder().andPath("/sub").build();
         final MethodResult subResourceMethod = MethodResultBuilder.withResponses(HttpResponseBuilder.withStatues(204).build()).andMethod(HttpMethod.POST).build();
         subResourceLocator.setSubResource(ClassResultBuilder.withResourcePath(null).andMethods(subResourceMethod).build());
-        final ClassResult resClassResult = ClassResultBuilder.withResourcePath("/test").andMethods(method, subResourceLocator).build();
+	    final MethodResult subResourceLocatorWithParams = MethodResultBuilder.newBuilder().andPath("/sub/{id1}").andPathParam("id1", "J").build();
+	    final MethodResult subResourceMethodWithParams = MethodResultBuilder.withResponses(HttpResponseBuilder.withStatues(200).build()).andMethod(HttpMethod.GET).andPath("subSub/{id2}").andPathParam("id2","J").build();
+	    subResourceLocatorWithParams.setSubResource(ClassResultBuilder.withResourcePath(null).andMethods(subResourceMethodWithParams).build());
+	    final ClassResult resClassResult = ClassResultBuilder.withResourcePath("/test").andMethods(method, subResourceLocator, subResourceLocatorWithParams).build();
 
-        final Set<ClassResult> results = new HashSet<>(Arrays.asList(appPathResult, resClassResult));
+	    final Set<ClassResult> results = new HashSet<>(Arrays.asList(appPathResult, resClassResult));
 
         final Resources actualResult = classUnderTest.interpret(results);
 

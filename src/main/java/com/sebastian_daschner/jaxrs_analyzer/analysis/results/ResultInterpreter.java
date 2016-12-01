@@ -25,6 +25,7 @@ import com.sebastian_daschner.jaxrs_analyzer.model.rest.Response;
 import com.sebastian_daschner.jaxrs_analyzer.model.results.ClassResult;
 import com.sebastian_daschner.jaxrs_analyzer.model.results.MethodResult;
 
+import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
 
@@ -97,9 +98,7 @@ public class ResultInterpreter {
     private ResourceMethod interpretResourceMethod(final MethodResult methodResult, final ClassResult classResult) {
         // HTTP method and method parameters
         final ResourceMethod resourceMethod = new ResourceMethod(methodResult.getHttpMethod());
-        updateMethodParameters(resourceMethod.getMethodParameters(), classResult.getClassFields());
-        updateMethodParameters(resourceMethod.getMethodParameters(), methodResult.getMethodParameters());
-        stringParameterResolver.replaceParametersTypes(resourceMethod.getMethodParameters());
+		resourceMethod.getMethodParameters().addAll(collectMethodParameters(methodResult, classResult));
 
         if (methodResult.getRequestBodyType() != null) {
             resourceMethod.setRequestBody(javaTypeAnalyzer.analyze(methodResult.getRequestBodyType()));
@@ -113,6 +112,19 @@ public class ResultInterpreter {
         addMediaTypes(methodResult, classResult, resourceMethod);
 
         return resourceMethod;
+    }
+
+    private Set<MethodParameter> collectMethodParameters(final MethodResult methodResult, final ClassResult classResult) {
+	    Set<MethodParameter> methodParameters = new HashSet<>();
+
+	    updateMethodParameters(methodParameters, classResult.getClassFields());
+	    updateMethodParameters(methodParameters, methodResult.getMethodParameters());
+	    // add parent resource parameters if this is subresource
+	    if (classResult.getParentSubResourceLocator() != null) {
+		    methodParameters.addAll(collectMethodParameters(classResult.getParentSubResourceLocator(), classResult.getParentSubResourceLocator().getParentResource()));
+	    }
+	    stringParameterResolver.replaceParametersTypes(methodParameters);
+	    return methodParameters;
     }
 
     /**

@@ -120,12 +120,13 @@ public class ResultInterpreter {
     private Set<MethodParameter> collectMethodParameters(final MethodResult methodResult, final ClassResult classResult) {
 	    Set<MethodParameter> methodParameters = new HashSet<>();
 
+        // add parent resource parameters if this is subresource
+        if (classResult.getParentSubResourceLocator() != null) {
+            methodParameters.addAll(collectMethodParameters(classResult.getParentSubResourceLocator(), classResult.getParentSubResourceLocator().getParentResource()));
+        }
 	    updateMethodParameters(methodParameters, classResult.getClassFields());
 	    updateMethodParameters(methodParameters, methodResult.getMethodParameters());
-	    // add parent resource parameters if this is subresource
-	    if (classResult.getParentSubResourceLocator() != null) {
-		    methodParameters.addAll(collectMethodParameters(classResult.getParentSubResourceLocator(), classResult.getParentSubResourceLocator().getParentResource()));
-	    }
+
 	    stringParameterResolver.replaceParametersTypes(methodParameters);
 	    return methodParameters;
     }
